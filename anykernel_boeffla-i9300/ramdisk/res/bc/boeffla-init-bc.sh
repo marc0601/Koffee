@@ -65,10 +65,6 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 
 # Apply Boeffla-Kernel default settings
 
-	# Sdcard buffer tweaks
-	echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
-	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
-
 	echo $(date) Boeffla-Kernel default settings applied >> $BOEFFLA_LOGFILE
 
 # init.d support (enabler only to be considered for Lineage based roms)
@@ -124,15 +120,20 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	fi
 
 ### KOFFEE's TWEAKS AND FIXUPS	
+# Sdcard buffer tweaks
+	echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
+	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
+
 # Use pyramid cpu scheduler by default
 	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
-# Enable total 400 MB zRam on 1 device as default
+# Enable 200 MB zRam on 1-st device with lz4 compression
 	echo "1" > /sys/block/zram0/reset
 	echo "209715200" > /sys/block/zram0/disksize
 	busybox mkswap /dev/block/zram0
 	busybox swapon /dev/block/zram0
 
+# Enable 400 MB zRam on 2-nd device with lzo compression 
 	echo "1" > /sys/block/zram1/reset
 	echo "lzo" > /sys/block/zram1/comp_algorithm
 	echo "419430400" > /sys/block/zram1/disksize
@@ -151,6 +152,8 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	echo 1 > /proc/sys/net/ipv4/conf/all/drop_gratuitous_arp
 	echo 1 > /proc/sys/net/ipv6/conf/all/drop_unsolicited_na
 
+# TCP Low Latency
+	echo 1 > /proc/sys/net/ipv4/tcp_low_latency
 # Tweak scheduler
 	echo 1 > /proc/sys/kernel/sched_child_runs_first
 
@@ -158,7 +161,7 @@ DATA_DEVICE="/dev/block/mmcblk0p12"
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
 # reduce nr_requests for emmc
-	echo 32 > /sys/block/mmcblk0/queue/nr_requests
+	echo 64 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
 
 # Turn off debugging for certain modules
