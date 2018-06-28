@@ -3,7 +3,7 @@
 # *****************************
 # BC-based initialization
 #
-# i9300 Cyanogenmod 13.0 version
+# n7100 lineageos 14.1 version
 #
 # V0.1
 # *****************************
@@ -62,16 +62,12 @@
 # remove not used configuration files for frandom and busybox
 	/sbin/busybox rm -f $FRANDOM_ENABLER
 	/sbin/busybox rm -f $BUSYBOX_ENABLER
-	
-# Apply Boeffla-Kernel default settings
 
-	# Sdcard buffer tweaks
-	echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
-	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
+# Apply Boeffla-Kernel default settings
 
 	echo $(date) Boeffla-Kernel default settings applied >> $BOEFFLA_LOGFILE
 
-# init.d support (enabler only to be considered for CM based roms)
+# init.d support (enabler only to be considered for Lineage based roms)
 # (zipalign scripts will not be executed as only exception)
 	if [ -f $INITD_ENABLER ] ; then
 		echo $(date) Execute init.d scripts start >> $BOEFFLA_LOGFILE
@@ -107,6 +103,7 @@
 	cat /sys/kernel/charge_levels/charge_level_wireless > /dev/bk_orig_charge_level_wireless
 	cat /sys/module/lowmemorykiller/parameters/minfree > /dev/bk_orig_minfree
 	/sbin/busybox lsmod > /dev/bk_orig_modules
+	cat /proc/sys/vm/swappiness > /dev/bk_orig_swappiness
 	cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor > /dev/bk_orig_scaling_governor
 	cat /sys/block/mmcblk0/queue/scheduler > /dev/bk_orig_mmcblk0_scheduler
 	cat /sys/block/mmcblk1/queue/scheduler > /dev/bk_orig_mmcblk1_scheduler
@@ -120,11 +117,31 @@
 		echo $(date) "Startup configuration found"  >> $BOEFFLA_LOGFILE
 		. $BOEFFLA_STARTCONFIG
 		echo $(date) "Startup configuration applied"  >> $BOEFFLA_LOGFILE
-	else
-		echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
 	fi
 
-### KOFFEE's TWEAKS AND FIXUPS
+### KOFFEE's TWEAKS AND FIXUPS	
+# Sdcard buffer tweaks
+	echo 2048 > /sys/block/mmcblk0/bdi/read_ahead_kb
+	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
+
+# Use pyramid cpu scheduler by default
+	echo "nightmare" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+# Enable 200 MB zRam on 1-st device with lz4 compression
+	echo "1" > /sys/block/zram0/reset
+	echo "209715200" > /sys/block/zram0/disksize
+	busybox mkswap /dev/block/zram0
+	busybox swapon /dev/block/zram0
+
+# Enable 400 MB zRam on 2-nd device with lzo compression 
+	echo "1" > /sys/block/zram1/reset
+	echo "lzo" > /sys/block/zram1/comp_algorithm
+	echo "419430400" > /sys/block/zram1/disksize
+	busybox mkswap /dev/block/zram1
+	busybox swapon /dev/block/zram1
+	echo "100" > /proc/sys/vm/swappiness
+	echo $(date) "No startup configuration found, enable all default settings"  >> $BOEFFLA_LOGFILE
+
 # Switch to fq_codel on mobile data and wlan
 	tc qdisc add dev rmnet0 root fq_codel
 	tc qdisc add dev wlan0 root fq_codel
@@ -135,6 +152,8 @@
 	echo 1 > /proc/sys/net/ipv4/conf/all/drop_gratuitous_arp
 	echo 1 > /proc/sys/net/ipv6/conf/all/drop_unsolicited_na
 
+# TCP Low Latency
+	echo 1 > /proc/sys/net/ipv4/tcp_low_latency
 # Tweak scheduler
 	echo 1 > /proc/sys/kernel/sched_child_runs_first
 
@@ -142,7 +161,7 @@
 	/sbin/supolicy --live "allow kernel system_file file { execute_no_trans }"
 
 # reduce nr_requests for emmc
-	echo 32 > /sys/block/mmcblk0/queue/nr_requests
+	echo 64 > /sys/block/mmcblk0/queue/nr_requests
 ### KOFFEE's TWEAKS AND FIXUPS ###
 
 # Turn off debugging for certain modules
@@ -195,7 +214,6 @@
 		echo "0" > /sys/fs/selinux/enforce
 		echo $(date) "SELinux: permissive" >> $BOEFFLA_LOGFILE
 	else
-        echo "1" > /sys/fs/selinux/enforce
 		echo $(date) "SELinux: enforcing" >> $BOEFFLA_LOGFILE
 	fi
 
