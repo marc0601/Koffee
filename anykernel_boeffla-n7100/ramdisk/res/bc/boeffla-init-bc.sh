@@ -125,7 +125,7 @@
 	echo 1024 > /sys/block/mmcblk1/bdi/read_ahead_kb
 
 # Use pyramid cpu scheduler by default
-	echo "nightmare" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+	echo "pyramid" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 # Enable 200 MB zRam on 1-st device with lz4 compression
 	echo "1" > /sys/block/zram0/reset
